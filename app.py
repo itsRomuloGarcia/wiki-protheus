@@ -5,7 +5,7 @@ from auth import login_required, admin_required
 import os
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'protheus_wiki_secret_key_2024')
+app.secret_key = os.environ.get('SECRET_KEY', generate_secret_key())
 
 # Configurar CORS para produção
 CORS(app)
@@ -234,4 +234,5 @@ def health():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
+
     app.run(host='0.0.0.0', port=port, debug=True)
