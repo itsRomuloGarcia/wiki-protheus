@@ -2,73 +2,78 @@ import sqlite3
 import os
 from datetime import datetime
 
-# Caminho do banco de dados
-_db_path = 'protheus_wiki.db'
+# Caminho do banco de dados no diretório temporário (único lugar com permissão de escrita no Vercel)
+_db_path = '/tmp/protheus_wiki.db'
 
 def init_db():
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    # Tabela de vídeos
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS videos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            description TEXT,
-            drive_url TEXT NOT NULL,
-            topic TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Tabela de áreas
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS areas (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Inserir áreas padrão se a tabela estiver vazia
-    cursor.execute('SELECT COUNT(*) FROM areas')
-    if cursor.fetchone()[0] == 0:
-        default_areas = [
-            ('compras', 'Compras'),
-            ('financeiro', 'Financeiro'),
-            ('pcp', 'PCP'),
-            ('estoque', 'Estoque'),
-            ('vendas', 'Vendas'),
-            ('fiscal', 'Fiscal'),
-            ('rh', 'Recursos Humanos'),
-            ('ti', 'T.I. Protheus')
-        ]
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
         
-        for area_id, name in default_areas:
-            cursor.execute('INSERT OR IGNORE INTO areas (id, name) VALUES (?, ?)', 
-                          (area_id, name))
-    
-    # Inserir alguns vídeos de exemplo se a tabela estiver vazia
-    cursor.execute('SELECT COUNT(*) FROM videos')
-    if cursor.fetchone()[0] == 0:
-        sample_videos = [
-            ('Configuração Inicial do Protheus', 'Primeiros passos para configurar o ambiente', 'https://drive.google.com/file/d/1abc123/preview', 'ti'),
-            ('Lançamento de Nota Fiscal', 'Como fazer lançamento de nota fiscal', 'https://drive.google.com/file/d/2def456/preview', 'fiscal'),
-            ('Controle de Estoque', 'Gerenciamento de estoque no Protheus', 'https://drive.google.com/file/d/3ghi789/preview', 'estoque')
-        ]
+        # Tabela de vídeos
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS videos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT,
+                drive_url TEXT NOT NULL,
+                topic TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
         
-        for title, description, drive_url, topic in sample_videos:
-            cursor.execute('''
-                INSERT INTO videos (title, description, drive_url, topic, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (title, description, drive_url, topic, datetime.now(), datetime.now()))
-    
-    conn.commit()
-    conn.close()
+        # Tabela de áreas
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS areas (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Inserir áreas padrão se a tabela estiver vazia
+        cursor.execute('SELECT COUNT(*) FROM areas')
+        if cursor.fetchone()[0] == 0:
+            default_areas = [
+                ('compras', 'Compras'),
+                ('financeiro', 'Financeiro'),
+                ('pcp', 'PCP'),
+                ('estoque', 'Estoque'),
+                ('vendas', 'Vendas'),
+                ('fiscal', 'Fiscal'),
+                ('rh', 'Recursos Humanos'),
+                ('ti', 'T.I. Protheus')
+            ]
+            
+            for area_id, name in default_areas:
+                cursor.execute('INSERT OR IGNORE INTO areas (id, name) VALUES (?, ?)', 
+                              (area_id, name))
+        
+        # Inserir alguns vídeos de exemplo se a tabela estiver vazia
+        cursor.execute('SELECT COUNT(*) FROM videos')
+        if cursor.fetchone()[0] == 0:
+            sample_videos = [
+                ('Configuração Inicial do Protheus', 'Primeiros passos para configurar o ambiente', 'https://drive.google.com/file/d/1abc123/preview', 'ti'),
+                ('Lançamento de Nota Fiscal', 'Como fazer lançamento de nota fiscal', 'https://drive.google.com/file/d/2def456/preview', 'fiscal'),
+                ('Controle de Estoque', 'Gerenciamento de estoque no Protheus', 'https://drive.google.com/file/d/3ghi789/preview', 'estoque')
+            ]
+            
+            for title, description, drive_url, topic in sample_videos:
+                cursor.execute('''
+                    INSERT INTO videos (title, description, drive_url, topic, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (title, description, drive_url, topic, datetime.now(), datetime.now()))
+        
+        conn.commit()
+        conn.close()
+        print("Banco de dados inicializado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao inicializar banco de dados: {e}")
 
 def get_connection():
-    conn = sqlite3.connect(_db_path)
+    # Garantir que o diretório /tmp existe
+    conn = sqlite3.connect(_db_path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 

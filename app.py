@@ -3,6 +3,11 @@ from flask_cors import CORS
 from database import init_db, add_video, get_videos, get_video_by_id, update_video, delete_video, get_videos_by_topic, get_areas, update_area, delete_area, add_area, get_area_by_id, get_videos_count_by_area
 from auth import login_required, admin_required
 import os
+import secrets
+
+# Gera uma chave secreta segura
+def generate_secret_key():
+    return secrets.token_hex(32)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', generate_secret_key())
@@ -230,9 +235,17 @@ def api_delete_area(area_id):
 # Health check para Vercel
 @app.route('/health')
 def health():
-    return jsonify({'status': 'healthy'})
+    return jsonify({'status': 'healthy', 'database': 'initialized'})
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+# Handler para erros 404
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({'error': 'Página não encontrada'}), 404
 
-    app.run(host='0.0.0.0', port=port, debug=True)
+# Handler para erros 500
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({'error': 'Erro interno do servidor'}), 500
+
+# Esta linha é importante para o Vercel
+app = app
